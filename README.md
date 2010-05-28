@@ -1,4 +1,4 @@
-# nodejs-soup
+# node-soup
 
 Experiments in client-side [nodejs](http://nodejs.org/).
 
