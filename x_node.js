@@ -112,6 +112,7 @@ process.compile("(function (exports) {"
   }
 })();
 
+/******************************* node-soup!!!!!
 // Timers
 function addTimerListener (callback) {
   var timer = this;
@@ -145,6 +146,8 @@ global.clearTimeout = function (timer) {
 };
 
 global.clearInterval = global.clearTimeout;
+*/
+
 
 var stdout;
 process.__defineGetter__('stdout', function () {
@@ -210,5 +213,5 @@ process.loop();
 process.emit("exit");
 
 })
-		(process)	// nodejs-soup: force execute!!
+		(process)	// node-soup: force execute!!
 ;
