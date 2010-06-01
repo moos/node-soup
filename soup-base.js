@@ -59,9 +59,9 @@ process.pid = 200;
 process.loop = function(){
 	// noop
 }
-process.unloop = function(){ throw "deprecated!" }
+process.unloop = function(){ throw Error("deprecated!") }
 process._byteLength = function(string,encoding){
-	if (arguments.length < 1 || typeof string != 'string') throw 'Bad argument';
+	if (arguments.length < 1 || typeof string != 'string') throw Error('Bad argument');
 	var b = new Buffer(string,encoding);
 	return b.length; 
 }
@@ -74,7 +74,7 @@ process.umask = function(mask){
 		return umask;
 }
 process.dlopen = function(){
-	throw "process.dlopen!!";
+	throw Error("process.dlopen!!");
 }
 
 process.chdir = function(path){ cwd = path }
@@ -132,10 +132,21 @@ process.compile = function(source, file){
 
 
 var natives = null,
-	nativeMarker = '::';
+	nativeMarker = '::',
+	Handles = {},
+	NEXT_FD = 3;	// 0 stdin, 1 stdout, 2 stderr
 	
 function Stats(){}	//prototyped in fs.js
 function Channel(){}
+
+function fd_handle(path,flags,mode){
+	this.path = path;
+	this.flags = flags;
+	this.mode = mode;
+	this.fd = NEXT_FD++;
+	this.eof = false;
+	Handles[this.fd] = this;
+}
 
 process.binding = function(module){
 	//console.log('binding:',arguments);
@@ -155,66 +166,47 @@ process.binding = function(module){
 				// TODO::::: missing many fs bindings!!!!!!!!!
 				
 				Stats : Stats,
-				stat : function(path, callback){
-					var stat = new Stats();
-					//stat.size = 1; // TODO!!
-
-					// check for file existance, throws error if not found
-					var ok, size, lastmod;
-					[ok, size, lastmod] = getFileStat(path);
-					if (!callback && !ok)	// throw immedi on sync
-						throw 'file not found';
-
-					mixin(stat, // mock data!
-						{ dev: 2049
-				        , ino: 305352
-				        , mode: 16877
-				        , nlink: 12
-				        , uid: 1000
-				        , gid: 1000
-				        , rdev: 0
-				        , size: size
-				        , blksize: size
-				        , blocks: 1
-				        , atime: '2009-06-29T11:11:55Z'
-				        , mtime: '2009-06-29T11:11:40Z'
-				        , ctime: '2009-06-29T11:11:40Z' 
-				        });
-					
-					
-					if (callback)
-						return defer(callback,!ok,stat);
-					else 
-						return stat;
-				},
+				stat  : makeStat,
+				lstat : makeStat,
+				fstat : makeStat,
+				
 				open : function(path, flags, mode, callback){
-					var fd = path; // fd is path!
+					var handle = new fd_handle(path, flags, mode);
 					if (callback)
-						return defer(callback,/*err*/null,fd);
+						return defer(callback,/*err*/null,handle.fd);
 
-					return fd; 
+					return handle.fd; 
 				},
-				close : emptyFunction,
+				close : function(fd, callback){
+					if (fd in Handles) { 
+						delete Handles[fd];
+					}
+					if (callback)
+						defer(callback,/*err*/null);
+				},
 				// read all at once
 				read : function(fd, buffer, offset, length, position, callback){
-					if (offset > 0) throw 'offset > 0 currently not supported!';
-					// for subsequent reads, return 0 to end while loop!
-					if (position > 0) return 0;
 					var bytesRead = 0, ok=true, content;
 					if (fd instanceof Buffer){
-						//debugger;
 						bytesRead = fd.copy(buffer,offset,position,position+length);
 						// TODO : remove from fd!????? as in STDIN
 					} else {
-						// string! --> file path
-						[ok,content] = getFileContent(fd);	// read as utf-8
-						if (ok) bytesRead = buffer.utf8Write(content,0);
+						var handle = Handles[fd];
+						if (!handle.eof) {
+							[ok,content] = getFileContent(handle.path);	// read as utf-8
+							if (ok) bytesRead = buffer.utf8Write(content,offset);
+							handle.eof = true; 
+						}
 					}
 					if (callback) {
 						return defer(callback,!ok,bytesRead);
 					}
 					return bytesRead;
 				},
+				
+				// TODO!!!!!!!!!!!!!
+				// TODO!!!!!!!!!!!!!
+				// TODO!!!!!!!!!!!!!
 				write : function(fd, buffer, offset, length, position, callback){
 					
 					//console.log(':: write', arguments, typeof fd, typeof fd.write);
@@ -228,10 +220,11 @@ process.binding = function(module){
 						fd += str;
 					}
 					// TODO: handle non-string fd's
+
+					var handle = fd in Handles ? Handles[fd] : null;
+					if (handle) fd = handle.fd;
 					
-//					console.info(fd);
-					
-					if (typeof callback == 'function') {
+					if (callback) {
 						return defer(callback,null,fd);
 					}
 					return str.length;
@@ -242,7 +235,7 @@ process.binding = function(module){
 			return {Buffer: Buffer};
 			
 		case 'stdio':
-			// TODO  stdout/in should be EventEmitter
+			// TODO  stdout/in should be EventEmitter  --- streams!!!????
 			return {
 				stdoutFD: new Buffer(4096),
 				writeError: function(msg){
@@ -331,6 +324,43 @@ process.Timer.prototype = {
 }
 
 /*
+ * Stat
+ */
+function makeStat(path, callback){
+	var stat = new Stats(),
+		err = Error('file not found: '+path);
+
+	err.path = path;
+	
+	// check for file existance, throws error if not found
+	var ok, size, lastmod;
+	[ok, size, lastmod] = getFileStat(path);
+	if (!callback && !ok)	// throw immedi on sync
+		throw err;
+
+	mixin(stat, // mock data!
+		{ dev: 2049
+        , ino: 305352
+        , mode: 16877
+        , nlink: 12
+        , uid: 1000
+        , gid: 1000
+        , rdev: 0
+        , size: size
+        , blksize: size
+        , blocks: 1
+        , atime: '2009-06-29T11:11:55Z'
+        , mtime: '2009-06-29T11:11:40Z'
+        , ctime: '2009-06-29T11:11:40Z' 
+        });
+	
+	if (callback)
+		return defer(callback,!ok && err,stat);
+	else 
+		return stat;
+}
+
+/*
  * Buffer
  */
 function Buffer(arg, encoding) {
@@ -412,7 +442,7 @@ Buffer.prototype.unpack = function(format,index) {
 	var out = [], v, b=this, l = this.length, err = 'Out of bounds';
 	format.split('').forEach(function(f){
 		if (f == 'N') {
-			if (index+3 >= l) throw err;
+			if (index+3 >= l) throw Error(err);
 			v = ( ((b[index  ] & 255) << 24) 
 				| ((b[index+1] & 255) << 16) 
 				| ((b[index+2] & 255) << 8)
@@ -421,24 +451,24 @@ Buffer.prototype.unpack = function(format,index) {
 			out.push(v);
 			index += 4;
 		} else if (f == 'n') {
-			if (index+1 >= l) throw err;
+			if (index+1 >= l) throw Error(err);
 			v = ((b[index] & 255) << 8)	| ((b[index+1] & 255));
 			out.push(v);
 			index += 2;
 		} else if (f == 'o') {
-			if (index >= l) throw err;
+			if (index >= l) throw Error(err);
 			v = b[index] & 255;
 			out.push(v);
 			index += 1;
 		} else 
-			throw 'Unknown format character';
+			throw Error('Unknown format character');
 	})
 	return out;
 }
 	
 Buffer.prototype.copy = function(target, targetStart, sourceStart, sourceEnd){
 	// source is this!
-	if (!(target instanceof Buffer)) throw 'First arg should be a Buffer';
+	if (!(target instanceof Buffer)) throw Error('First arg should be a Buffer');
 	// TODO: arg check...
 	targetStart = targetStart || 0;
 	sourceStart = sourceStart || 0;

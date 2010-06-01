@@ -14,7 +14,8 @@ var
 				+ ' #eio-* #error-reporting #eval-cx'
 				+ ' event-emitter-add-listeners event-emitter-modify-in-emit event-emitter-remove-listeners'
 				+ ' exception-handler #exec'
-				+ ' file-read-noexist test-read-stream'
+				+ ' file-read-noexist file-read-stream #file-write-stream'
+				+ ' #fs-chmod fs-error-messages'
 				)
 				.split(' ')
 				.reverse().slice(0,1)		// TEMP: run last for now!!!
