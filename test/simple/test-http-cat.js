@@ -26,12 +26,14 @@ server.addListener('listening', function () {
       server.close();
     }
   });
-
+  
   http.cat("http://localhost:12312/", "utf8", function (err, content) {
     if (err) { 
       puts("got error (this should happen)");
       bad_server_got_error = true;
-    } 
+    } else {
+        puts("didnt' get error (this should NOT happen!!!)");
+    }
   });
 });
 

@@ -1,8 +1,10 @@
 require('../common');
 
+
 var sys = require('sys'),
-  http = require('http'),
-  childProcess = require('child_process');
+  http = require('http')
+;  //,
+//  childProcess = require('child_process');
 
 s = http.createServer(function (request, response) {
   response.writeHead(304);
@@ -13,11 +15,13 @@ sys.puts('Server running at http://127.0.0.1:'+PORT+'/')
 
 s.addListener('listening', function () {
 
-  childProcess.exec('curl http://127.0.0.1:'+PORT+'/', function (err, stdout, stderr) {
-    if (err) throw err;
-    s.close();
-    sys.puts('curled response correctly');
-  });
+	debugger;
+	
+//  childProcess.exec('curl http://127.0.0.1:'+PORT+'/', function (err, stdout, stderr) {
+//    if (err) throw err;
+//    s.close();
+//    sys.puts('curled response correctly');
+//  });
 
 });
 

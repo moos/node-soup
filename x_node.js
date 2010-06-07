@@ -55,7 +55,6 @@ process.nextTick = function (callback) {
   process._needTickCallback();
 };
 
-//debugger;
 
 // Module System
 var module = {}

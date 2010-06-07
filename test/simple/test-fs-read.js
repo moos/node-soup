@@ -3,7 +3,7 @@ var path = require('path'),
     fs = require('fs'),
     filepath = path.join(fixturesDir, 'x.txt'),
     fd = fs.openSync(filepath, 'r'),
-    expected = 'xyz\n',
+    expected = 'xyz\r\n',
     readCalled = 0;
 
 fs.read(fd, expected.length, 0, 'utf-8', function(err, str, bytesRead) {
