@@ -21,7 +21,8 @@ if (!Object.keys) {
 	Object.keys = function (object) {
 	  var results = [];
 	  for (var property in object)
-	    results.push(property);
+		  if (object.hasOwnProperty(property))
+			  results.push(property);
 	  return results;
 	}
 }
@@ -33,6 +34,12 @@ if (!Object.defineProperty) {
 	}
 }
 
+if (!Object.getOwnPropertyNames) {
+	Object.getOwnPropertyNames = function(obj) {
+		// limitations: can't access non-enumerable properties
+		return Object.keys(obj);
+	}
+}
 
 /* scope control */
 (function(){
