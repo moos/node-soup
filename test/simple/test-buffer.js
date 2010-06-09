@@ -6,7 +6,6 @@ var Buffer = require('buffer').Buffer;
 var b = new Buffer(1024);
 
 puts("b.length == " + b.length);
-
 assert.equal(1024, b.length);
 
 for (var i = 0; i < 1024; i++) {
@@ -35,7 +34,6 @@ for (var j = 0; j < 500; j++) {
   for (var i = 0; i < asciiString.length; i++) {
     b[i] = asciiString.charCodeAt(i);
   }
-
   var asciiSlice = b.toString('ascii', 0, asciiString.length);
   assert.equal(asciiString, asciiSlice);
 
@@ -61,6 +59,7 @@ for (var j = 0; j < 100; j++) {
     assert.equal(b[100+i], slice[i]);
   }
 }
+
 
 // unpack
 
@@ -89,6 +88,7 @@ assert.deepEqual([0xDEAD], b.unpack('n', 4));		// node-soup!
 assert.deepEqual([0xDE], b.unpack('o', 4));			// node-soup!
 	
 
+
 // Bug regression test
 var testValue = '\u00F6\u65E5\u672C\u8A9E'; // ö日本語
 var buffer = new Buffer(32);
@@ -116,7 +116,6 @@ assert.equal(d.length, 3);
 assert.equal(d[0], 23);
 assert.equal(d[1], 42);
 assert.equal(d[2], 255);
-
 
 var e = new Buffer('über');
 assert.deepEqual(e, new Buffer([195, 188, 98, 101, 114]));

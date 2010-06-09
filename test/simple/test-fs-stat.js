@@ -3,8 +3,6 @@ var fs = require('fs');
 var got_error = false;
 var success_count = 0;
 
-
-
 fs.stat(".", function (err, stats) {
   if (err) {
     got_error = true;
@@ -57,7 +55,6 @@ fs.open(".", "r", undefined, function(err, fd) {
   }
   fs.close(fd);
 });
-
 
 puts("stating: " + __filename);
 fs.stat(__filename, function (err, s) {

@@ -6,13 +6,7 @@ var body = "hello world\n";
 var server_response = "";
 var client_got_eof = false;
 
-//debugger;
-
-
 var server = http.createServer(function (req, res) {
-
-	//sdebugger;
-
   assert.equal('1.0', req.httpVersion);
   assert.equal(1, req.httpVersionMajor);
   assert.equal(0, req.httpVersionMinor);
@@ -26,17 +20,10 @@ var c = net.createConnection(PORT);
 c.setEncoding("utf8");
 
 c.addListener("connect", function () {
-	
-	var msg = '';
-  msg += "GET / HTTP/1.0\r\n" ;
-  msg += "Header: head1\r\n";
-  msg +=  "\r\n\r\n" ;
-  
-  c.write( msg );
+  c.write( "GET / HTTP/1.0\r\n\r\n" );
 });
 
 c.addListener("data", function (chunk) {
-//	debugger;
   puts(chunk);
   server_response += chunk;
 });
@@ -46,18 +33,6 @@ c.addListener("end", function () {		// not getting called!!!!
   client_got_eof = true;
   c.end();
   server.close();
-});
-c.addListener("timeout", function () {
-	debugger;
-	client_got_eof = true;
-	c.end();
-	server.close();
-});
-c.addListener("close", function () {
-	debugger;
-	client_got_eof = true;
-	c.end();
-	server.close();
 });
 
 process.addListener("exit", function () {
