@@ -14,12 +14,12 @@ var
 				+ ' #eio-* #error-reporting #eval-cx'
 				+ ' event-emitter-add-listeners event-emitter-modify-in-emit event-emitter-remove-listeners'
 				+ ' exception-handler #exec'
-				+ ' file-read-noexist file-read-stream #file-write-stream'
+				+ ' file-read-noexist #file-write-stream'
 				+ ' #fs-chmod fs-error-messages #fs-fsync fs-read-buffer fs-read fs-readfile-empty fs-stat'
-				+ ' http-1.0 http-304 http-cat http-1.0'
+				//+ ' #http-1.0 http-304 http-cat #http-1.0'
 				)
 				.split(' ')
-				.reverse().slice(0,1)		// TEMP: run last for now!!!
+				//.reverse().slice(0,1)		// TEMP: run last for now!!!
 	},
 	
 	fixtures = {

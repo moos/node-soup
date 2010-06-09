@@ -213,7 +213,9 @@ var Sockets = {};
 function socket_handle(){
 	this.fd = NEXT_FD++;
 	//this.eof = false;
-	this.buffer = new Buffer();	// len???
+	this.reader = { pos:0, eof:true, buffer: null };
+	this.writer = { pos:0, eof:true, buffer: null };
+
 	this.error = 0; // success
 	this.readable = this.writable = false;
 	Sockets[this.fd] = this;
@@ -360,10 +362,10 @@ process.binding = function(module){
 			ENOENT = 2,
 			EMFILE = 24,
 			ECONNREFUSED = 61;
-
+		var handle = null;
+		
 		return {
 			socket : function(arg,address){
-				var handle;
 				if (arg == 'unix')
 					handle = new socket_handle();
 				else // tcp4, tcp6
@@ -372,56 +374,88 @@ process.binding = function(module){
 				
 				return handle.fd; 
 			},
-			bind : function(fd,arg,address) {
-				var handle = Sockets[fd];
-				if (arg >= 0) {
-					handle.port = arg;
+			// bind socket to local address
+			bind : function(fd,port,address) {
+				handle = Sockets[fd];
+				if (port >= 0) {
+					handle.port = port;
 					handle.address = address || null;
 				} else { // port is a path (string)
-					handle.path = arg;
+					handle.path = port;
 				}
 			},
-			connect : function(fd,arg,address) {
-				var handle = Sockets[fd],
-					found = false;
+			// enable listen for a connection
+			listen : function(fd,backlog){
+				handle = Sockets[fd];
+				handle.readable = true;
+			},
+			// connect socket to remote address
+			connect : function(fd,remote_port,remote_address) {
+				var found = false;
+				handle = Sockets[fd];
 				handle.peer = null;
-				// see if there is a peer to connect to
-				if (arg >= 0) { // arg is a port
+				// see if remote peer is listening
+				if (remote_port >= 0) { // it's a port
 					for (var k in Sockets){
-						var h = Sockets[k];
-						found = h.readable				// peer is listening
-								&& h.port == arg 		// ports match
-								&& (! h.address || h.address == address);	// peer listens on ANY IP or IP match
-
+						var remote = Sockets[k];
+						found = remote.readable					// peer is listening
+								&& remote.port == remote_port	// ports match
+								&& (! remote.address 			// peer listens on ANY IP 
+									|| remote.address == remote_address);	// or IPs match
 						if (found){
-							handle.peer = h.fd;
-							// in progress until peer 'accepts'
-							handle.error = EINPROGRESS;
+							handle.peer = remote.fd;
+							handle.error = EINPROGRESS;			// in progress until peer accept()'s
 							break;
 						}
 					}
-					if (!found)
-						// No one listening on the remote address.
-						// http://linux.die.net/man/2/connect
+					if (!found) {	// No one listening on the remote address.
+									// http://linux.die.net/man/2/connect
 						handle.error = ECONNREFUSED; 
-					
+					}
 					// mark as writable: see net.js, line 731
-					// triggers write watcher which checks error state
+					// triggers write watcher which checks error state to see if connection has been accept()'d
 					handle.writable = true;
-
-				} else { // arg is a path (string)
+				} else { // port is a path (string)
 					// TODO
 					throw 'TODO connect to unix socket';
-					handle.path = arg;
+					handle.path = remote_port;
 				}
-			},				
+			},	
+			// accept a pending connection on fd
+			accept : function(fd){
+				handle = Sockets[fd];
+				// who is trying to connect?
+				for (var k in Sockets){
+					var remote = Sockets[k];
+					if (remote.peer == fd && ! remote.connected){ // prevent multiple connections
+						remote.connected = true;
+
+						// make new peer socket and physically connect them!! 
+						var peer_handle = new socket_handle();
+						peer_handle.reader.buffer = remote.writer.buffer = new Buffer();
+						peer_handle.writer.buffer = remote.reader.buffer = new Buffer();
+						
+						peer_handle.readable = remote.writable;	// already true from connect
+						peer_handle.writable = remote.readable = true;
+						
+						remote.error = 0;	// triggers success (connected) on remote
+						return {  // peerInfo
+							fd		: peer_handle.fd,
+							port	: remote.port,
+							address	: remote.address 
+						}
+					}
+				}
+				return null;
+			},			
 			close : function(fd){
 				
 				console.log('close socket fd',fd);
 				
 				if (fd in Sockets) {
-					var handle = Sockets[fd];
-					delete handle.buffer;
+					handle = Sockets[fd];
+					delete handle.reader;
+					delete handle.writer;	// safe on connected sockets ???
 					delete Sockets[fd];
 					// TODO reuse fd.. add to reuse list
 				}
@@ -429,7 +463,7 @@ process.binding = function(module){
 			},
 			shutdown : function(fd,how){
 				if (fd in Sockets){
-					var handle = Sockets[fd];
+					handle = Sockets[fd];
 					how = how || 'write';  // default: see node_net2.cc 
 					if (how == 'write' || how == 'readwrite') handle.writable = false; 
 					if (how == 'read'  || how == 'readwrite') handle.readable = false;
@@ -439,58 +473,50 @@ process.binding = function(module){
 			socketError : function(fd){
 				return Sockets[fd].error;
 			},
-			listen : function(fd,backlog){
-				var handle = Sockets[fd];
-				handle.readable = true;
-			},
-			// accept a pending connection on fd
-			accept : function(fd){
-				var handle = Sockets[fd],
-					found = false;
-				// who is trying to connect?
-				for (var k in Sockets){
-					var peer = Sockets[k];
-					if (peer.peer == fd 
-						&& ! peer.connected) // prevent multiple connections
-						{
-						peer.connected = true;
-						peer.error = 0;	// trigger success on peer
-						return {  // peerInfo
-							fd		: peer.fd,
-							port	: peer.port,
-							address	: peer.address 
-						}
-					}
-				}
-				return null;
-			},
 			// read from fd into buffer: offset & length refer to buffer
 			read : function(fd, buffer, offset, length){
 				if (!(fd in Sockets)) throw 'fd not in socket for read: ' + fd;
-				var handle = Sockets[fd];
-				if (! handle.buffer.length) return 0; 
-									// (target, targetStart, sourceStart, sourceEnd)
-				var bytesRead = handle.buffer.copy(buffer,offset,0,handle.buffer.length) 
-				delete handle.buffer;
-				handle.buffer = new Buffer();
+				handle = Sockets[fd];
+				var reader = handle.reader;
+				if (! reader.buffer.length || !length || reader.eof ) return 0; 
+				
+				var sourceStart = reader.pos,
+					sourceEnd = sourceStart + Math.min(length, reader.buffer.length - reader.pos),
+											// (target, targetStart, sourceStart, sourceEnd)
+					bytesRead = reader.buffer.copy(buffer, offset, sourceStart, sourceEnd);
+				
+				reader.pos = sourceEnd;
+				reader.eof = (reader.pos >= reader.buffer.length);
+				
+				//delete handle.buffer;
+				//handle.buffer = new Buffer();
+
 				// mark it writable
-				handle.readable = false;
-				handle.writable = true;
+//				handle.readable = false;
+//				handle.writable = true;
 				return bytesRead;
 			},
-			// write to fd from buffer
+			// write to fd from buffer: offset & length refer to buffer
+			// TODO implements write (not append!), previous data gets obliterated -- is this correct??
 			write : function(fd, buffer, offset, length){
-				// allocate space on sockets buffer
 				if (!(fd in Sockets)) throw 'fd not in socket for write: ' + fd;
-				var handle = Sockets[fd];
+				handle = Sockets[fd];
+				var writer = handle.writer;
+				// allocate space on sockets buffer
 				delete handle.buffer;
 				handle.buffer = new Buffer(length);
-									// (target, targetStart, sourceStart, sourceEnd)
+				handle.eof = false;
+				handle.pos = 0;
+				if (!length) return 0;
+										// (target, targetStart, sourceStart, sourceEnd)
 				var bytesWritten = buffer.copy(handle.buffer,0,offset,offset+length);
 				// mark it readable
-				handle.readable = true;
-				handle.writable = false;
+//				handle.readable = true;
+//				handle.writable = false;
 				return bytesWritten;
+			},
+			errnoException : function(errno, syscall){
+				return new Error('errnoException: errno='+errno+', syscall='+syscall);
 			},
 
 			// TODO................
@@ -499,9 +525,12 @@ process.binding = function(module){
 			setNoDelay  : function(){debugger},
 			setKeepAlive: function(){debugger},
 			getsockname : function(){debugger},
-			errnoException : function(errno, syscall){
-				return new Error('errnoException: errno='+errno+', syscall='+syscall);
-			},
+			getpeername : function(){debugger},
+			isIP		: function(){debugger},
+			socketpair	: function(){debugger},
+			pipe		: function(){debugger},
+			recvMsg		: function(){debugger},
+			sendFD		: function(){debugger},
 			
 			// err no's are system dependent... but we don't care since
 			// everything happens here!
@@ -601,7 +630,7 @@ HTTPParser.prototype.execute = function(buffer, offset, length){
 	}
 	
 	// parse body
-	// TODO chunk encoding
+	// TODO chunk encoding  : see http://github.com/felixge/node-formidable/blob/master/lib/formidable/multipart_parser.js
 	// for now send everything....
 	this.onBody(buffer, offset + bytesParsed, length - bytesParsed);
 	bytesParsed = length;
@@ -619,6 +648,8 @@ HTTPParser.prototype.reinitialize = function(type){
 	this.type = type;
 }
 
+// TODO See: paperboy's streamFile http://github.com/felixge/node-paperboy/blob/master/lib/paperboy.js
+// to serve files over http!
 
 
 /*
@@ -682,7 +713,6 @@ process.Timer = function(){
 /*
  * IOWatcher
  */
-
 process.IOWatcher = (function(){
 	var watchers = [],
 		timer = null,
@@ -704,8 +734,8 @@ process.IOWatcher = (function(){
 				// TODO ??
 			} else if (fd in Sockets) {
 				handle = Sockets[fd];
-				haveData = (w.__isReadable && handle.readable)	// socket is listening
-						|| (w.__isWritable && handle.writable)
+				haveData = (w.__isReadable && (handle.readable )) // || ! handle.reader.eof ))
+						|| (w.__isWritable && (handle.writable )) // || ! handle.writer.eof ))
 						;// || handle.buffer.length > 0; // have data ????
 			} else {
 				// socket must have closed -- shutdown watchers!! 
@@ -811,8 +841,9 @@ function makeStat(path, callback){
 
 /*
  * Buffer
+ * unlike node_buffer.cc, Buffer implementation here has
+ * dynamic size & grows as needed!
  */
-
 var MAX_BUFFER_SIZE = 4096; 		// TODO temp!!
 
 function Buffer(arg, encoding) {
@@ -823,9 +854,6 @@ function Buffer(arg, encoding) {
 		b.length = b.write(arg,encoding,0);
 		return b;
 		
-		encoding = encoding || 'utf8';
-		return Buffer._fromString(arg);
-		
 	} else if (typeof arg == 'number') {
 		
 		arg = Math.min(arg,MAX_BUFFER_SIZE);	// temp!!
@@ -835,7 +863,8 @@ function Buffer(arg, encoding) {
 	} else if (arg instanceof Array) {
 		for (var i=0; i<arg.length; i++) this[i] = arg[i];
 		this.length = arg.length;
-	} 
+	} else if (arg)
+		throw 'TODO unsupported Buffer argument!!';
 }
 Buffer.prototype = {};
 
@@ -844,12 +873,12 @@ Buffer.prototype = {};
 Buffer.prototype.slice = Array.prototype.slice;	// TODO slice MUST reference
 												// original buffers!!
 
+	// slice
 Buffer.prototype.binarySlice = function(start, stop){
 	for (var str='', i=start; i<stop; i++)
 		str += String.fromCharCode(this[i] & 255);
 	return str;
 }
-	// slice
 Buffer.prototype.asciiSlice = function(start, stop){
 	for (var str='', i=start; i<stop; i++)
 		str += String.fromCharCode(this[i] & 255); // 127!!
@@ -862,28 +891,36 @@ Buffer.prototype.utf8Slice = function(start, stop){
 }
 	// write
 Buffer.prototype.asciiWrite = function(string, offset){
-	offset = offset || 0
-	for (var i=0, l=string.length; i<l; i++){
+	offset = offset || 0;
+	if (offset >= this.length) throw new Error('Offset is out of bounds');
+	var towrite = Math.min(string.length, this.length - offset);
+	for (var i=0; i<towrite; i++){
 		this[i+offset] = string.charCodeAt(i) & 255; // & 127 !!!!! (7-bit)
 	}	
-	Buffer._charsWritten = string.length;
-	return l;
+	this._pos = offset+towrite;
+	return towrite;
 }
 Buffer.prototype.binaryWrite = function(string, offset){
-	offset = offset || 0
-	for (var i=0, l=string.length; i<l; i++){
+	offset = offset || 0;
+	if (offset >= this.length) throw new Error('Offset is out of bounds');
+	var towrite = Math.min(string.length, this.length - offset);
+	for (var i=0; i<towrite; i++){
 		this[i+offset] = string.charCodeAt(i) & 255;
-	}	
-	return l;
+	}
+	this._pos = offset+towrite;
+	return towrite;
 }
 Buffer.prototype.utf8Write = function(string, offset){
-	offset = offset || 0
+	offset = offset || 0;
+	if (offset >= this.length) throw new Error('Offset is out of bounds');
 	var encodedStr = unescape(encodeURIComponent(string));
-	for (var i=0, l=encodedStr.length; i<l; i++){
+	var towrite = Math.min(encodedStr.length, this.length - offset);
+	for (var i=0; i<towrite; i++){
 		this[i+offset] = encodedStr.charCodeAt(i);
 	}	
-	Buffer._charsWritten = string.length;
-	return l;
+	this._pos = offset+towrite;
+	Buffer._charsWritten = string.length;	// TODO use utf8Decoder!!! multibyte might be split!!!!
+	return towrite;	// bytes written
 }
 // from: node_buffer.cc
 // buffer.unpack(format, index);
@@ -944,7 +981,8 @@ Buffer.prototype.copy = function(target, targetStart, sourceStart, sourceEnd){
 	return toCopy;
 }
 
-Buffer.byteLength = function(string,encoding){
+Buffer.byteLength = function(string,encoding){	
+	throw 'TODO Buffer.byteLength '; 
 	return string.length; // TODO
 }
 Buffer._charsWritten = 0;
