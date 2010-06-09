@@ -234,7 +234,9 @@ function isDate (d) {
   if (typeof d !== "object") return false;
   var properties = Date.prototype && Object.getOwnPropertyNames(Date.prototype);
   var proto = d.__proto__ && Object.getOwnPropertyNames(d.__proto__);
-  return JSON.stringify(proto) === JSON.stringify(properties);
+  return (!!properties && properties.length)	// one of them should NOT be blank! 	@moos
+  												// getOwnPropertyNames returns [] on FF!!
+  			&& JSON.stringify(proto) === JSON.stringify(properties);
 }
 
 

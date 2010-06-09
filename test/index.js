@@ -1,5 +1,4 @@
-// node-soup: app.js
-
+// node-soup test module
 // signature: function (exports, require, module, __filename, __dirname)
 
 //console.log(this, arguments);//require, global, process, module);
@@ -7,7 +6,7 @@
 
 var
 	simple = {
-		path : './test/simple/test-',
+		path : '../deps/node/test/simple/test-',
 		tests : ('assert buffer byte-length #c-ares chdir'
 				+ ' #child-process-*'
 				+ ' #crypto #delayed-require'
@@ -19,11 +18,11 @@ var
 				//+ ' #http-1.0 http-304 http-cat #http-1.0'
 				)
 				.split(' ')
-				//.reverse().slice(0,1)		// TEMP: run last for now!!!
+				.reverse().slice(0,1)		// TEMP: run last for now!!!
 	},
 	
 	fixtures = {
-		path : './test/fixtures/',
+		path : '../deps/node/test/fixtures/',
 		tests : 'a echo exit'.split(' ')
 	};
 

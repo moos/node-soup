@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>node-soup test</title>
+    <meta charset="UTF-8" />
+
+	<link rel="stylesheet" __href="http://github.com/jquery/qunit/raw/master/qunit/qunit.css" type="text/css" media="screen">
+	<script type="text/javascript" __src="http://github.com/jquery/qunit/raw/master/qunit/qunit.js"></script>
+    
+    <script>
+    	process = {};
+    	process.argv = [];
+    	process.argv[1] = 'index.js';
+		process.env = {};
+		process.env.NODE_DEBUG = 1;		// this must be set before loading node
+    </script>
+
+	<script type="text/javascript" src="../lib/soup-base.js"></script>
+	
+
+</head>
+<body>
+<h1>Test</h1>
+
+
+</body>
+</html>
