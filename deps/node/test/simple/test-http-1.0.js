@@ -28,15 +28,13 @@ c.addListener("data", function (chunk) {
   server_response += chunk;
 });
 
-c.addListener("end", function () {		// not getting called!!!!
-	debugger;
+c.addListener("end", function () {
   client_got_eof = true;
   c.end();
   server.close();
 });
 
 process.addListener("exit", function () {
-	debugger;
   var m = server_response.split("\r\n\r\n");
   assert.equal(m[1], body);
   assert.equal(true, client_got_eof);
