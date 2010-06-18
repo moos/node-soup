@@ -90,6 +90,9 @@ fs.stat(__filename, function (err, s) {
 });
 
 process.addListener("exit", function () {
+	
+	puts('success_count: ' + success_count);
+	
   assert.equal(5, success_count);
   assert.equal(false, got_error);
 });
