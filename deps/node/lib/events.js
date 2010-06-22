@@ -5,7 +5,7 @@ process.EventEmitter.prototype.emit = function (type) {
 	
 	
 	if (process.env['NODE_DEBUG']) 
-		console.log('== emit', type, this.constructor.name, this);
+		console.log('== emit', type, arguments[1], this.constructor.name);
 	
 	
 		

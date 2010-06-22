@@ -5,8 +5,12 @@
 var
 	simple = {
 		path  : '../deps/node/test/simple/',
-		tests : window._getFileContent('test-node-simple.txt').split('\n')
+		tests : window._getFileContent('test-node-simple.txt').split(/\r?\n/)
 	};
+
+
+
+//require(simple.path + 'test-http-1.0'); return;
 
 
 function runTests(which){
@@ -24,7 +28,7 @@ function runTests(which){
 			newWorker(file);
 		})
 	});
-	
+
 	function parseFileList(name){
 		if (name.indexOf('#.show') == 0) {hide = false; return false} 
 		if (name.indexOf('#.exit') == 0) {return true} 	// skip the rest
@@ -35,6 +39,7 @@ function runTests(which){
 			QUnit.test(name + ' -- SKIPPED', function(){});
 			return false;
 		}
+		// return nothing continues
 	}
 }
 
@@ -47,7 +52,7 @@ function newWorker(file) {
 		// get 'Uncaught illegal access' doing JSON.parse(ev.data)
 		var data = ev.data;
 		switch(data.type){
-		case 'done':	// trigger asyn test
+		case 'done':	// worker is done - trigger asyn test
 			if (data.count !== null)
 				QUnit.ok(true, 'success ('+ data.count + ' assertions)');
 			QUnit.start();
@@ -56,7 +61,15 @@ function newWorker(file) {
 			QUnit.ok(true, data.msg);
 			return;
 		case 'error':	// a test error occurred
+			
+			console.log(data.msg);
+			
 			QUnit.ok(false, data.msg.message);
+			return;
+		case 'fatal': 	// exception not handled by node
+			QUnit.ok(false, 'fatal: ' + data.msg);
+			QUnit.start();		// start if it wasn't started by worker
+			worker.terminate();	// force terminate worker
 			return;
 		case 'log':
 		default:
@@ -68,6 +81,18 @@ function newWorker(file) {
 		// uncaught exception!
 		console.error('worker onerror:', ev);
 
+		// Clean up message.  chrome adds 'uncaught <classname>: ' to message
+		// TODO Firefox sometimes returns blank, 
+			// bug: https://bugzilla.mozilla.org/show_bug.cgi?id=512157
+			// and: http://www.nczonline.net/blog/2009/08/25/web-workers-errors-and-debugging
+		var msg = ev.message.replace(/^Uncaught ([_\$\w]+: )?/i,''); 
+		
+		// give node chance to handle it.
+		worker.postMessage({type:'uncaughtException', error: {type: ev.type, message: msg} });
+
+		return;
+		
+		
 		QUnit.ok(false, ev.message);
 		QUnit.start();	// start if it wasn't started by worker
 
@@ -76,7 +101,7 @@ function newWorker(file) {
 	}
 	
 	// start it
-	worker.postMessage({start: true, file: file});
+	worker.postMessage({type: 'start', file: file});
 	
 }
 
