@@ -1,12 +1,19 @@
 # do '#.exit' on new line to exit
 
+test-http-exceptions.js
+
+#.exit
+
+# test-repl.js
+
+#.hide
+
 test-assert.js
 test-buffer.js
 test-byte-length.js
 test-c-ares.js
 test-chdir.js
 
-#.hide
 test-child-process-buffering.js
 test-child-process-custom-fds.js
 test-child-process-env.js
@@ -16,7 +23,7 @@ test-child-process-kill.js
 test-child-process-stdin.js
 test-child-process-stdout-flush.js
 test-crypto.js
-#.show
+
 
 test-delayed-require.js
 #test-eio-race.js
@@ -48,6 +55,9 @@ test-fs-symlink.js
 test-fs-write-buffer.js
 test-fs-write-sync.js
 test-fs-write.js
+
+#.show
+
 test-http-1.0.js
 test-http-304.js
 test-http-cat.js
@@ -60,6 +70,11 @@ test-http-exceptions.js
 test-http-full-response.js
 test-http-head-request.js
 test-http-head-response-has-no-body.js
+
+
+#.exit
+
+
 test-http-malformed-request.js
 test-http-parser.js
 test-http-proxy.js
