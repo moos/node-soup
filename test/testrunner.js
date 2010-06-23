@@ -3,7 +3,7 @@
 
 //console.log('testrunner begin', [exports, typeof require,  typeof module, __filename, __dirname]  );
 
-importScripts('QUnit.js');
+importScripts('qunit/qunit/qunit.js');
 
 
 // hook into module to apply filters
@@ -123,7 +123,7 @@ self.runTest = function (file, timeout) {
 	// async testing requires an end marker.  this is usually done with some 'finish' or 'done' callback
 	// from the test suite.  since we don't have access to the actual test suite, we'll set some artificially
 	// sufficient timeout
-	setTimeout(workerDone, timeout || 1250);	// longer tests may need more time!!!!!!!!!! <<<<<<<	
+	setTimeout(workerDone, timeout || 3250);	// longer tests may need more time!!!!!!!!!! <<<<<<<	
 
 	try{
 		// actual test file

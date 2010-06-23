@@ -1,12 +1,9 @@
 # do '#.exit' on new line to exit
 
-test-http-exceptions.js
+#.ignore
 
-#.exit
 
-# test-repl.js
-
-#.hide
+####.hide
 
 test-assert.js
 test-buffer.js
@@ -31,7 +28,7 @@ test-delayed-require.js
 #test-eio-race4.js
 test-error-reporting.js
 
-#.hide
+####.hide
 
 test-eval-cx.js
 test-event-emitter-add-listeners.js

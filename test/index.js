@@ -5,7 +5,7 @@
 var
 	simple = {
 		path  : '../deps/node/test/simple/',
-		tests : window._getFileContent('test-node-simple.txt').split(/\r?\n/)
+		tests : getFileContent('test-node-simple.txt').split(/\r?\n/)
 	};
 
 
@@ -14,26 +14,27 @@ var
 
 
 function runTests(which){
-	var hide = false;
+	var ignore = hide = false;
 	
 	which.tests.some(function(name,index){
 		var b = parseFileList(name); 
-		if (typeof b == 'boolean') return b;
+		if (typeof b == 'boolean') return !ignore && b;
 		var file = which.path + name.replace(/.js$/i, ''); // discard .js ext for require()
 
 		// queue up async tests -- start() will run them sequentially
 		QUnit.asyncTest(name, function(){
 
 			// run test in worker
-			newWorker(file);
+			initWorker(file);
 		})
 	});
 
 	function parseFileList(name){
+		if (name.indexOf('#.ignore') == 0) {ignore = true; return false} 
 		if (name.indexOf('#.show') == 0) {hide = false; return false} 
 		if (name.indexOf('#.exit') == 0) {return true} 	// skip the rest
 		if (name.indexOf('#.hide') == 0) {hide = true}
-		if (hide) return false;
+		if (!ignore && hide) return false;
 		if (/^#?\s+|^\s*$/.test(name)) return false;	// skip blank lines and # comments
 		if (name[0] == '#') {							// skip #test 
 			QUnit.test(name + ' -- SKIPPED', function(){});
@@ -45,7 +46,7 @@ function runTests(which){
 
 	
 var worker = null;
-function newWorker(file) {
+function initWorker(file) {
 	
 	worker = new Worker('worker.js');
 	worker.onmessage = function(ev){
@@ -89,20 +90,33 @@ function newWorker(file) {
 		
 		// give node chance to handle it.
 		worker.postMessage({type:'uncaughtException', error: {type: ev.type, message: msg} });
-
-		return;
-		
-		
-		QUnit.ok(false, ev.message);
-		QUnit.start();	// start if it wasn't started by worker
-
-		// force terminate worker
-		worker.terminate();
 	}
 	
 	// start it
 	worker.postMessage({type: 'start', file: file});
 	
+}
+
+function getFileContent(path){
+	var content = '', ok=true;
+	var xhr = new XMLHttpRequest();
+	
+	xhr.addEventListener('load',function(ev){
+		content = this.responseText;
+	}, false);
+	xhr.addEventListener('error',function(ev){
+		console.info('error ', path, arguments);
+		ok = false;
+	}, false);
+	
+	try{
+		xhr.open('GET',path, /* async */null);
+		xhr.send();
+	} catch(e){
+		// likely a file not found
+		ok = false;
+	}
+	return ok && content;
 }
 
 //run tests

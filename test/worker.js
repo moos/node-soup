@@ -27,11 +27,12 @@ importScripts('../lib/soup-base-2.js');	// this is sync!
 
 //console.log('hi ' , typeof global, typeof require, ''+module , typeof QUnit);
 
-onmessage = function(ev){
+self.onmessage = function(ev){
 	var data = ev.data;
 
 	if (data.type == 'start') {
 		console.log('starting ' + data.file);
+		
 		runTest(data.file);
 		
 	} else if (data.type == 'uncaughtException') {
