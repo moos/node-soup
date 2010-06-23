@@ -65,4 +65,4 @@ timer = setTimeout(function () {
   server.close();
   assert.strictEqual(4, exception_count);
   process.exit(0);
-}, 300);
+}, 2300);

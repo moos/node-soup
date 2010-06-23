@@ -5,6 +5,13 @@
 
 importScripts('qunit/qunit/qunit.js');
 
+// override object parser to prevent 'too much recursion'
+QUnit.jsDump.parsers._object = QUnit.jsDump.parsers.object;	// save original
+QUnit.jsDump.setParser('object',function(obj){
+	if (obj.constructor && obj.constructor.name) return obj.constructor.name;
+	if (this._depth_ > 2) return '"[Object]" MAX DEPTH'; 
+	return this.parsers._object.call( this, obj );
+});
 
 // hook into module to apply filters
 
@@ -58,6 +65,7 @@ assert = require('assert');
 	function makeWrapper(f,k){
 		return function(){
 			if (require.main.unitTest.isVerbose() ) { 
+				
 				var msg = QUnit.jsDump.parse(arguments);
 				postMessage({type:'data' , msg: k+'...'+ truncate(msg) + ' ?'});
 			} else {
@@ -112,7 +120,9 @@ require.main.unitTest = {
 
 // note: this must be defined as a function expression to be recognized across worker scripts
 // self is Worker object
-self.runTest = function (file, timeout) {
+var timer = null;
+self.TIMEOUT = 6000;	// msec
+self.runTest = function (file) {
 
 	console.log('runTest ', file);
 	
@@ -123,9 +133,16 @@ self.runTest = function (file, timeout) {
 	// async testing requires an end marker.  this is usually done with some 'finish' or 'done' callback
 	// from the test suite.  since we don't have access to the actual test suite, we'll set some artificially
 	// sufficient timeout
-	setTimeout(workerDone, timeout || 3250);	// longer tests may need more time!!!!!!!!!! <<<<<<<	
+	timer = setTimeout(workerDone, TIMEOUT, true);	// longer tests may need more time!!!!!!!!!! <<<<<<<	
 
 	try{
+		
+		// add listener for end of test -- may or may not fire!
+		process.addListener('exit',function(){
+			console.log('///////////', this, arguments);
+			workerDone();
+		})
+		
 		// actual test file
 		require(file);
 
@@ -138,7 +155,13 @@ self.runTest = function (file, timeout) {
 }
 
 
-function workerDone(){
+function workerDone( timedout ){
+	clearTimeout(timer);
+	
+	if ( timedout ){
+		postMessage({type:'error', msg: new Error('test timedout after '+self.TIMEOUT+' (see  self.TIMEOUT in '+__filename+')' ) });
+	}
+	
 	postMessage({type:'done', count: require.main.unitTest.counters.pop() || null });
 	// close the worker
 	close();

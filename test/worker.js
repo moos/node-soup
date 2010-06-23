@@ -21,7 +21,8 @@ process.argv = [];
 process.argv[1] = 'testrunner.js';	// loaded by node
 process.env = {};
 process.env.NODE_DEBUG = 0;		// this must be set before loading node
-
+process.env.NODE_PATH = '../deps/node/lib/';
+	
 importScripts('../lib/soup-base-2.js');	// this is sync!
 
 
