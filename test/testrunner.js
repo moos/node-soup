@@ -1,8 +1,20 @@
-// node-soup test module
+/*
+ * testrunner.js
+ * 
+ *   - is run within node.js
+ *   - hooks into node module loader to apply filters
+ *   - wraps node assertion methods to capture test meta
+ * 
+ * copyright (c) 2010 Moos
+ * http://github.com/moos
+ */
 // signature: function (exports, require, module, __filename, __dirname)
 
-//console.log('testrunner begin', [exports, typeof require,  typeof module, __filename, __dirname]  );
 
+// period after which test is assumed hung (increase if needed for longer tests)
+var TIMEOUT = 10000;	// msec
+
+// just need the parser here
 importScripts('qunit/qunit/qunit.js');
 
 // override object parser to prevent 'too much recursion'
@@ -13,50 +25,37 @@ QUnit.jsDump.setParser('object',function(obj){
 	return this.parsers._object.call( this, obj );
 });
 
+
 // hook into module to apply filters
-
 var Module = module.constructor;
-
 Module.prototype._compile_orig = Module.prototype._compile;
-Module.prototype._compile = function (content, filename) {
-	
+Module.prototype._compile = function (content, filename) {	
 	if (filename in filters) {
-		filters[filename].forEach(function(f){ content = f(content) }) ;
+		filters[filename].forEach(function(f){ content = apply_filter(f, content) }) ;
 	}
-	// global filter - make global available to modules
-	//	content = "with (global) {\n" + content + "\n}\n";
-
 	return this._compile_orig(content, filename); 
 }
 
 // define filters
-
 var filters = {};
-
-function filter_silent(content){
-	content = (  "require.main.unitTest.enter('silence');\n"
+function apply_filter(filter, content){
+	return 'require.main.unitTest.enter("'+filter+'");\n'
 			+ content 
-			+ "\n;require.main.unitTest.leave('silence');\n"
-			);
-	return content;
+			+ '\n;require.main.unitTest.leave("'+filter+'");\n' 
 }
 
 // load assert here so we can wrap its methods for verbose mode
-
 assert = require('assert');
 (function(){
-	
 	wrapMethods(assert);
 
 	function wrapMethods(exports) {
 		// wrap all methods
 		for (var k in exports){
 			var f = exports[k];
-			if (typeof f != 'function') continue;
-	
+			if (typeof f != 'function') continue;	
 			// wrap everything but AssertionError
-			if (f.name && f.name == 'AssertionError' ) continue;
-			
+			if (f.name && f.name == 'AssertionError' ) continue;			
 			exports[k] = (function(f,k){	// closure for f,k
 				return makeWrapper(f,k); 
 			})(f,k);
@@ -64,10 +63,11 @@ assert = require('assert');
 	}
 	function makeWrapper(f,k){
 		return function(){
-			if (require.main.unitTest.isVerbose() ) { 
-				
+			if (require.main.unitTest.isVerbose() ) { 				
 				var msg = QUnit.jsDump.parse(arguments);
+				
 				postMessage({type:'data' , msg: k+'...'+ truncate(msg) + ' ?'});
+				
 			} else {
 				++ require.main.unitTest.counter;
 			}
@@ -119,15 +119,14 @@ require.main.unitTest = {
 
 
 // note: this must be defined as a function expression to be recognized across worker scripts
-// self is Worker object
 var timer = null;
-self.TIMEOUT = 6000;	// msec
-self.runTest = function (file) {
+worker.runTest = function (file) {
 
 	console.log('runTest ', file);
 	
+	// have filters?
 	if (/test-buffer/.test(file)) {
-		filters [file+'.js'] = [ filter_silent ];
+		filters [file+'.js'] = [ 'silence' ];
 	}
 
 	// async testing requires an end marker.  this is usually done with some 'finish' or 'done' callback
@@ -135,17 +134,16 @@ self.runTest = function (file) {
 	// sufficient timeout
 	timer = setTimeout(workerDone, TIMEOUT, true);	// longer tests may need more time!!!!!!!!!! <<<<<<<	
 
-	try{
-		
+	try{		
+		// actual test file
+		require(file);
+
 		// add listener for end of test -- may or may not fire!
 		process.addListener('exit',function(){
 			console.log('///////////', this, arguments);
 			workerDone();
 		})
 		
-		// actual test file
-		require(file);
-
 	} catch(e){
 		// this catches sync (non-callback) exceptions. 
 		// async exceptions are caught by worker's onerror handler
@@ -155,15 +153,17 @@ self.runTest = function (file) {
 }
 
 
-function workerDone( timedout ){
+worker.workerDone = function ( timedout ){
 	clearTimeout(timer);
 	
 	if ( timedout ){
-		postMessage({type:'error', msg: new Error('test timedout after '+self.TIMEOUT+' (see  self.TIMEOUT in '+__filename+')' ) });
-	}
-	
+		postMessage({type:'error', msg: new Error('test timedout after '+TIMEOUT+' (may want to increase TIMEOUT in '+__filename+')' ) });
+		// force exit! (will emit 'exit')
+		process.reallyExit(-1);
+		return;
+	}	
 	postMessage({type:'done', count: require.main.unitTest.counters.pop() || null });
 	// close the worker
-	close();
+	worker.close();
 }
 

@@ -1,6 +1,16 @@
-// node-soup test module
-// signature: function (exports, require, module, __filename, __dirname)
-
+/*
+ * index.js
+ * 
+ * node-soup test module main js file
+ * 
+ * - uses QUnit test framework
+ * - loads list of test files
+ * - runs each test in a web worker
+ * - when test is done, display result using QUnit
+ * 
+ * copyright (c) 2010 Moos
+ * http://github.com/moos
+ */
 
 var
 	simple = {
@@ -44,6 +54,12 @@ function runTests(which){
 	}
 }
 
+// if no assersions in test, mark it fail!
+QUnit.testDone = function (name, failures, total) {
+	if (total <= 0) {
+		document.querySelector('#qunit-tests > li:last-child').className = 'fail';
+	}
+}
 	
 var worker = null;
 function initWorker(file) {
@@ -79,7 +95,7 @@ function initWorker(file) {
 		}
 	}
 	worker.onerror = function(ev){
-		// uncaught exception!
+		// uncaught exception! includes any async exceptions & assertion fails
 		console.error('worker onerror:', ev);
 
 		// Clean up message.  chrome adds 'uncaught <classname>: ' to message
@@ -87,6 +103,11 @@ function initWorker(file) {
 			// bug: https://bugzilla.mozilla.org/show_bug.cgi?id=512157
 			// and: http://www.nczonline.net/blog/2009/08/25/web-workers-errors-and-debugging
 		var msg = ev.message.replace(/^Uncaught ([_\$\w]+: )?/i,''); 
+		
+		if (/^AssertionError:/.test(msg) ){
+			worker.postMessage({type:'AssertionError', error: {type: 'AssertionError', message: msg} });
+			return;
+		}
 		
 		// give node chance to handle it.
 		worker.postMessage({type:'uncaughtException', error: {type: ev.type, message: msg} });
