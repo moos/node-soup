@@ -66,7 +66,7 @@ assert = require('assert');
 			if (require.main.unitTest.isVerbose() ) { 				
 				var msg = QUnit.jsDump.parse(arguments);
 				
-				postMessage({type:'data' , msg: k+'...'+ truncate(msg) + ' ?'});
+				postMessage({type:'data' , message: k+'...'+ truncate(msg) + ' ?'});
 				
 			} else {
 				++ require.main.unitTest.counter;
@@ -120,6 +120,8 @@ require.main.unitTest = {
 
 // note: this must be defined as a function expression to be recognized across worker scripts
 var timer = null;
+worker.listenerAdded = false;
+
 worker.runTest = function (file) {
 
 	console.log('runTest ', file);
@@ -139,25 +141,34 @@ worker.runTest = function (file) {
 		require(file);
 
 		// add listener for end of test -- may or may not fire!
-		process.addListener('exit',function(){
-			console.log('///////////', this, arguments);
-			workerDone();
-		})
+		process.addListener('exit', worker.exitListener);
+		worker.listenerAdded = true;
 		
 	} catch(e){
 		// this catches sync (non-callback) exceptions. 
 		// async exceptions are caught by worker's onerror handler
-		postMessage({type:'error' , msg : new Error(e) });
-		workerDone();
+
+		console.log(111, typeof e, ''+e, e.message, e, Object.keys(e), e.constructor === assert.AssertionError);
+
+		if (e.constructor === assert.AssertionError) {
+			worker.handleAssertError(e);
+		} else {
+			worker.handleUncaughtException(e);
+		}
 	}
 }
 
+worker.exitListener = function(code) {
+	console.log('///////////', this, arguments);
+	if (code !== 0)
+		postMessage({type:'error' , message: 'exit code: '+code});
+	workerDone();
+}
 
 worker.workerDone = function ( timedout ){
 	clearTimeout(timer);
-	
 	if ( timedout ){
-		postMessage({type:'error', msg: new Error('test timedout after '+TIMEOUT+' (may want to increase TIMEOUT in '+__filename+')' ) });
+		postMessage({type:'error', message: 'test timedout after '+TIMEOUT+' (may want to increase TIMEOUT in '+__filename+')'  });
 		// force exit! (will emit 'exit')
 		process.reallyExit(-1);
 		return;

@@ -17,7 +17,7 @@ if (typeof console == 'undefined') {
 	console.log =  console.info = console.warn = console.error =	function(){
 			postMessage({
 				type:'log', 
-				msg: (QUnit && QUnit.jsDump.parse(arguments) ) 
+				message: (QUnit && QUnit.jsDump.parse(arguments) ) 
 					|| JSON.stringify(Array.prototype.slice.call(arguments)) 
 				});
 		}
@@ -46,35 +46,47 @@ self.onmessage = function(ev){
 		
 		runTest(data.file);	 // in testrunner.js
 		
-	} else if (data.type == 'AssertionError') {
-		
-		postMessage({type:'error' , msg : new Error(data.error.message) });
-		workerDone();
-
-		
 	} else if (data.type == 'uncaughtException') {
-		console.log('have error', data.type, data.error.message, data);
-		var handled = false;
-		try {
-			handled = process.emit(data.type, new Error(data.error.message));
-			
-			console.log('handled? ', handled);
-			
-			if (handled === false) {
-			//	postMessage({type:'fatal', msg: data.error.message });
-			}
-		} catch(e) {
 
-			console.log('no handler or rethrown', e);
+		handleUncaughtException(data.message);
 
-			postMessage({type:'error' , msg : new Error(e) });
-			
-			postMessage({type:'done', count: null});
-			// close the worker
-			worker.close();			
-		}
+	} else {
+		postMessage({type:'fatal' , message : 'unknown worker message type!' });
 	}
 }
+
+worker.handleUncaughtException = function(msg){
+
+	// exception may have occured before our exit handler, so add it here 
+	if ( ! worker.listenerAdded) { 
+		process.addListener('exit', worker.exitListener);
+		worker.listenerAdded = true;
+	}
+
+	var handled = false;
+	try {
+		handled = process.emit('uncaughtException', new Error(msg));
+		console.log('handled? ', handled);
+
+	} catch(e) { // rethrown
+		msg = e;
+	}
+
+	if (handled === false) {
+		postMessage({type:'error' , message: ''+msg });
+		workerDone();
+		return;
+	}
+	
+}
+
+worker.handleAssertError = function(msg) {
+	postMessage({type:'error' , message: ''+msg });
+	workerDone();
+}
+
+
+
 
 // crashes FF!!!!!!!
 _onerror = function(ev) {

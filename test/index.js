@@ -75,28 +75,29 @@ function initWorker(file) {
 			QUnit.start();
 			return;
 		case 'data':	// data is a test data point
-			QUnit.ok(true, data.msg);
+			QUnit.ok(true, data.message);
 			return;
-		case 'error':	// a test error occurred
+		case 'error':	// assertion failure
 			
-			console.log(data.msg);
+			console.log(data.message);
 			
-			QUnit.ok(false, data.msg.message);
+			QUnit.ok(false, data.message);
 			return;
 		case 'fatal': 	// exception not handled by node
-			QUnit.ok(false, 'fatal: ' + data.msg);
+			QUnit.ok(false, 'fatal: ' + data.message);
 			QUnit.start();		// start if it wasn't started by worker
 			worker.terminate();	// force terminate worker
 			return;
 		case 'log':
 		default:
-			console.log('worker says:', data.msg);
+			console.log('worker says:', data.message);
 			return;
 		}
 	}
+
+	// handle uncaught exceptions, including any async exceptions & assertion fails
 	worker.onerror = function(ev){
-		// uncaught exception! includes any async exceptions & assertion fails
-		console.error('worker onerror:', ev);
+		console.warn('worker onerror:', ev);
 
 		// Clean up message.  chrome adds 'uncaught <classname>: ' to message
 		// TODO Firefox sometimes returns blank, 
@@ -104,13 +105,16 @@ function initWorker(file) {
 			// and: http://www.nczonline.net/blog/2009/08/25/web-workers-errors-and-debugging
 		var msg = ev.message.replace(/^Uncaught ([_\$\w]+: )?/i,''); 
 		
+		// handle assertion errors here
 		if (/^AssertionError:/.test(msg) ){
-			worker.postMessage({type:'AssertionError', error: {type: 'AssertionError', message: msg} });
+			QUnit.ok(false, msg);
+			QUnit.start();		// start if it wasn't started by worker
+			worker.terminate();	// force terminate worker
 			return;
 		}
 		
 		// give node chance to handle it.
-		worker.postMessage({type:'uncaughtException', error: {type: ev.type, message: msg} });
+		worker.postMessage({type:'uncaughtException', message: msg });
 	}
 	
 	// start it
