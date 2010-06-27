@@ -31,7 +31,7 @@ process = {
 	argv: ['node','testrunner.js'],	// node loads testrunner.js
 	env : {
 		NODE_DEBUG : 0,
-		NODE_PATH :  '../deps/node/lib/'
+		NODE_PATH :  '../deps/node'
 	}
 };	
 importScripts('../lib/soup-base-2.js');	// this is sync!

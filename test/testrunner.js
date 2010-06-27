@@ -63,7 +63,9 @@ assert = require('assert');
 	}
 	function makeWrapper(f,k){
 		return function(){
-			if (require.main.unitTest.isVerbose() ) { 				
+			
+			if (require.main.unitTest.isVerbose() 
+					|| (k != 'equal' && k != 'ok') ) { 				
 				var msg = QUnit.jsDump.parse(arguments);
 				
 				postMessage({type:'data' , message: k+'...'+ truncate(msg) + ' ?'});
@@ -127,7 +129,8 @@ worker.runTest = function (file) {
 	console.log('runTest ', file);
 	
 	// have filters?
-	if (/test-buffer/.test(file)) {
+	if (/test-buffer|test-fs-read-file-sync/.test(file)) {
+		console.log('!! silence mode !!')
 		filters [file+'.js'] = [ 'silence' ];
 	}
 

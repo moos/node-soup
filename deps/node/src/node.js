@@ -187,11 +187,11 @@ process.openStdin = function () {
 };
 
 
-global.console = {};
-
-global.console.log = function (x) {
-  process.stdout.write(x + '\n');
-};
+//global.console = {};
+//
+//global.console.log = function (x) {
+//  process.stdout.write(x + '\n');
+//};
 
 
 process.exit = function (code) {
