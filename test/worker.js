@@ -31,10 +31,10 @@ process = {
 	argv: ['node','testrunner.js'],	// node loads testrunner.js
 	env : {
 		NODE_DEBUG : 0,
-		NODE_PATH :  '../deps/node'
+		NODE_PATH :  '../lib/node/lib'
 	}
 };	
-importScripts('../lib/soup-base-2.js');	// this is sync!
+importScripts('../lib/soup/soup-base-2.js');	// this is sync!
 
 
 // handle messages from host

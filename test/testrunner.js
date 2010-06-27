@@ -29,7 +29,7 @@ QUnit.jsDump.setParser('object',function(obj){
 // hook into module to apply filters
 var Module = module.constructor;
 Module.prototype._compile_orig = Module.prototype._compile;
-Module.prototype._compile = function (content, filename) {	
+Module.prototype._compile = function (content, filename) {
 	if (filename in filters) {
 		filters[filename].forEach(function(f){ content = apply_filter(f, content) }) ;
 	}
@@ -41,7 +41,8 @@ var filters = {};
 function apply_filter(filter, content){
 	return 'require.main.unitTest.enter("'+filter+'");\n'
 			+ content 
-			+ '\n;require.main.unitTest.leave("'+filter+'");\n' 
+//			+ '\n;process.nextTick(function(){ require.main.unitTest.leave("'+filter+'") });\n' 
+// don't leave silence mode !! tests may be running async!! in callback!
 }
 
 // load assert here so we can wrap its methods for verbose mode
@@ -63,11 +64,10 @@ assert = require('assert');
 	}
 	function makeWrapper(f,k){
 		return function(){
-			
-			if (require.main.unitTest.isVerbose() 
-					|| (k != 'equal' && k != 'ok') ) { 				
+			if (require.main.unitTest.isVerbose()	// verbose 
+				|| (k != 'equal' && k != 'ok') ) 	// or disable 'equal' and 'ok' only
+			{ 				
 				var msg = QUnit.jsDump.parse(arguments);
-				
 				postMessage({type:'data' , message: k+'...'+ truncate(msg) + ' ?'});
 				
 			} else {
@@ -95,6 +95,9 @@ require.main.unitTest = {
 	},
 	enter : function(mode){
 		if (mode == 'silence') {
+			
+			console.log('>>> enter silence')
+			
 			this.silencePrint(true);
 			this.verbose.push(false);
 			this.counter = 0;
@@ -102,6 +105,9 @@ require.main.unitTest = {
 	},	
 	leave : function(mode){
 		if (mode == 'silence') {
+			
+			console.log('<<< leavesilence')
+			
 			this.verbose.pop(); 
 			this.silencePrint(false);			
 			this.counters.push(this.counter);
@@ -129,9 +135,9 @@ worker.runTest = function (file) {
 	console.log('runTest ', file);
 	
 	// have filters?
-	if (/test-buffer|test-fs-read-file-sync/.test(file)) {
-		console.log('!! silence mode !!')
-		filters [file+'.js'] = [ 'silence' ];
+	if (/(test-buffer|test-fs-read-file-sync|test-fs-read-stream)/.test(file)) {
+		console.log('!! silence mode !!', file)
+		filters [file.replace(/^\.\//,'')+'.js'] = [ 'silence' ];
 	}
 
 	// async testing requires an end marker.  this is usually done with some 'finish' or 'done' callback
@@ -176,7 +182,7 @@ worker.workerDone = function ( timedout ){
 		process.reallyExit(-1);
 		return;
 	}	
-	postMessage({type:'done', count: require.main.unitTest.counters.pop() || null });
+	postMessage({type:'done', count: require.main.unitTest.counters.pop() || require.main.unitTest.counter || null });
 	// close the worker
 	worker.close();
 }

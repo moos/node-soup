@@ -4,4 +4,4 @@
 
 //require('./deps/node/test/simple/test-repl');
 
-require('./deps/node/test/simple/test-fs-read-file-sync');
+require('./test/tests/node/test/simple/test-fs-write-buffer');

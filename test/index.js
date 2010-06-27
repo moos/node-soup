@@ -14,8 +14,8 @@
 
 var
 	simple = {
-		path  : '../deps/node/test/simple/',
-		tests : getFileContent('test-node-simple.txt').split(/\r?\n/)
+		path  : './tests/node/test/simple/',
+		tests : getFileContent('tests/test-node-simple.txt').split(/\r?\n/)
 	};
 
 
