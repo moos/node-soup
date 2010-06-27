@@ -190,12 +190,6 @@ function resolveModulePath(request, parent) {
 
     var parentIdPath = path.dirname(parent.id +
       (path.basename(parent.filename).match(new RegExp('^index\\.(' + exts.join('|') + ')')) ? "/" : ""));    
-    											// get 'unterminated string literal'     $^
-    
-///////////////////////////
-///////////////////////////
-///////////////////////////
-///////////////////////////
     id = path.join(parentIdPath, request);
     paths = [path.dirname(parent.filename)];
   } else {

@@ -3,7 +3,7 @@ var events = require('events');
 
 exports.print = function () {
   for (var i = 0, len = arguments.length; i < len; ++i) {
-    process.stdout.write(arguments[i]);
+    process.stdout.write(String(arguments[i]));
   }
 };
 
@@ -284,6 +284,24 @@ exports.exec = function () {
   return require('child_process').exec.apply(this, arguments);
 };
 
+
+exports.pump = function (readStream, writeStream, callback) {
+  readStream.addListener("data", function (chunk) {
+    if (writeStream.write(chunk) === false) readStream.pause();
+  });
+
+  writeStream.addListener("drain", function () {
+    readStream.resume();
+  });
+
+  readStream.addListener("end", function () {
+    writeStream.end();
+  });
+
+  readStream.addListener("close", function () {
+    if (callback) callback();
+  });
+};
 
 /**
  * Inherit the prototype methods from one constructor into another.

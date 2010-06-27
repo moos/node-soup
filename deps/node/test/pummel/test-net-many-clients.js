@@ -21,7 +21,6 @@ var server = net.createServer(function (c) {
     c.end();
   });
 });
-server.listen(PORT);
 
 function runClient (callback) {
   var client = net.createConnection(PORT);
@@ -45,7 +44,7 @@ function runClient (callback) {
   });
 
   client.addListener("error", function (e) {
-    puts("\n\nERROOOOOr");
+    console.log("\n\nERROOOOOr");
     throw e;
   });
 
@@ -55,7 +54,7 @@ function runClient (callback) {
     assert.equal(bytes, client.recved.length);
 
     if (client.fd) {
-      puts(client.fd);
+      console.log(client.fd);
     }
     assert.ok(!client.fd);
 
@@ -67,7 +66,7 @@ function runClient (callback) {
   });
 }
 
-server.addListener('listening', function () {
+server.listen(PORT, function () {
   var finished_clients = 0;
   for (var i = 0; i < concurrency; i++) {
     runClient(function () {
@@ -78,5 +77,5 @@ server.addListener('listening', function () {
 
 process.addListener("exit", function () {
   assert.equal(connections_per_client * concurrency, total_connections);
-  puts("\nokay!");
+  console.log("\nokay!");
 });

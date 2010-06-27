@@ -15,20 +15,20 @@ server.listen(PORT);
 var client = http.createClient(PORT);
 
 client.addListener("error", function() {
-  sys.puts("ERROR!");
+  console.log("ERROR!");
   errorCount++;
 });
 
 client.addListener("end", function() {
-  sys.puts("EOF!");
+  console.log("EOF!");
   eofCount++;
 });
 
 var request = client.request("GET", "/", {"host": "localhost"});
-request.addListener('response', function(response) {
-  sys.puts("STATUS: " + response.statusCode);
-});
 request.end();
+request.addListener('response', function(response) {
+  console.log("STATUS: " + response.statusCode);
+});
 
 setTimeout(function () {
   server.close();

@@ -12,7 +12,6 @@ server = http.createServer(function (req, res) {
   res.write(body);
   res.end();
 });
-server.listen(PORT);
 
 var keepAliveReqSec = 0;
 var normalReqSec = 0;
@@ -22,7 +21,7 @@ function runAb(opts, callback) {
   var command = "ab " + opts + " http://127.0.0.1:" + PORT + "/";
   exec(command, function (err, stdout, stderr) {
     if (err) {
-      puts("ab not installed? skipping test.\n" + stderr);
+      console.log("ab not installed? skipping test.\n" + stderr);
       process.exit();
       return;
     }
@@ -42,16 +41,16 @@ function runAb(opts, callback) {
   });
 }
 
-server.addListener('listening', function () {
+server.listen(PORT, function () {
   runAb("-k -c 100 -t 2", function (reqSec, keepAliveRequests) {
     keepAliveReqSec = reqSec;
     assert.equal(true, keepAliveRequests > 0);
-    puts("keep-alive: " + keepAliveReqSec + " req/sec");
+    console.log("keep-alive: " + keepAliveReqSec + " req/sec");
 
     runAb("-c 100 -t 2", function (reqSec, keepAliveRequests) {
       normalReqSec = reqSec;
       assert.equal(0, keepAliveRequests);
-      puts("normal: " + normalReqSec + " req/sec");
+      console.log("normal: " + normalReqSec + " req/sec");
       server.close();
     });
   });
