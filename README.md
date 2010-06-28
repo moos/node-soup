@@ -12,5 +12,5 @@ Experiments in client-side [nodejs](http://nodejs.org/).
 
 ***this is a work in progress***
 
-`lib` and `test` folders from http://github.com/ry/node
+`lib\node` and `test\tests\node` folders from http://github.com/ry/node
 
