@@ -91,7 +91,9 @@ test-querystring.js
 test-readdir.js
 test-regression-object-prototype.js
 test-repl.js
+test-script-context.js
 test-script-new.js
+test-script-static-context.js
 test-script-static-new.js
 test-script-static-this.js
 test-script-this.js
