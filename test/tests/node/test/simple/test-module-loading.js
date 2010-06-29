@@ -3,6 +3,32 @@ var path = require('path');
 
 debug("load test-module-loading.js");
 
+//debugger;
+
+var aaa = require('../fixtures/a1');
+
+return;
+
+
+
+var asyncRun = false;
+require.async('../fixtures/a1', function (err, a) {
+	
+	debugger;
+	
+  if (err) throw err;
+  assert.equal("A", a.A());
+  asyncRun = true;
+});
+
+
+return;
+
+
+
+
+
+
 var a = require("../fixtures/a");
 var c = require("../fixtures/b/c");
 var d = require("../fixtures/b/d");
@@ -68,6 +94,9 @@ assert.equal(require('path').dirname(__filename), __dirname);
 
 var asyncRun = false;
 require.async('../fixtures/a1', function (err, a) {
+	
+	debugger;
+	
   if (err) throw err;
   assert.equal("A", a.A());
   asyncRun = true;
@@ -75,7 +104,7 @@ require.async('../fixtures/a1', function (err, a) {
 
 debug('load custom file types with registerExtension');
 require.registerExtension('.test', function(content) {
-  assert.equal("this is custom source\n", content);
+  assert.equal("this is custom source\r\n", content);
 
   return content.replace("this is custom source", "exports.test = 'passed'");
 });
@@ -109,7 +138,7 @@ process.addListener("exit", function () {
 
   assert.equal(true, errorThrown);
 
-  assert.equal(true, asyncRun);
+  assert.deepEqual(true, asyncRun);
 
   assert.equal(true, errorThrownAsync);
 
