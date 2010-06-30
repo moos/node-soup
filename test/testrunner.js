@@ -12,7 +12,7 @@
 
 
 // period after which test is assumed hung (increase if needed for longer tests)
-var TIMEOUT = 10000;	// msec
+var TIMEOUT = 20000;	// msec
 
 // just need the parser here
 importScripts('qunit/qunit/qunit.js');
@@ -28,12 +28,13 @@ QUnit.jsDump.setParser('object',function(obj){
 
 // hook into module to apply filters
 var Module = module.constructor;
-Module.prototype._compile_orig = Module.prototype._compile;
+
+Module.prototype._compile_orig2 = Module.prototype._compile;
 Module.prototype._compile = function (content, filename) {
 	if (filename in filters) {
 		filters[filename].forEach(function(f){ content = apply_filter(f, content) }) ;
 	}
-	return this._compile_orig(content, filename); 
+	return this._compile_orig2(content, filename); 
 }
 
 // define filters
