@@ -12,7 +12,7 @@
 
 
 // period after which test is assumed hung (increase if needed for longer tests)
-var TIMEOUT = 20000;	// msec
+var TIMEOUT = 15000;	// msec
 
 // just need the parser here
 importScripts('qunit/qunit/qunit.js');

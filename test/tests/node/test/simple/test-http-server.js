@@ -13,6 +13,10 @@ http.createServer(function (req, res) {
   res.id = request_number;
   req.id = request_number++;
 
+  
+  console.log('........',  res.id, req.method)
+  
+  
   if (req.id == 0) {
     assert.equal("GET", req.method);
     assert.equal("/hello", url.parse(req.url).pathname);
@@ -93,3 +97,6 @@ process.addListener("exit", function () {
 
   assert.equal(true, client_got_eof);
 });
+
+
+setTimeout(function(){ process.exit(-1) },3000)
