@@ -1,12 +1,13 @@
 require("../common");
 net = require('net');
-var N = 50;
+var N = 5;
 
 var c = 0;
 var client_recv_count = 0;
 var disconnect_count = 0;
 
 var server = net.createServer(function (socket) {
+	
   socket.addListener("connect", function () {
     socket.write("hello\r\n");
   });
@@ -35,6 +36,17 @@ server.listen(PORT, function () {
     client_recv_count += 1;
     console.log("client_recv_count " + client_recv_count);
     assert.equal("hello\r\n", chunk);
+    
+    
+    
+    
+    
+    client.write('boo');
+    // if client doesn't write, server socket never reads so doesn't have a chance to close!!
+    
+    
+    
+    
     client.end();
   });
 
@@ -52,4 +64,3 @@ process.addListener("exit", function () {
   assert.equal(N+1, disconnect_count);
   assert.equal(N+1, client_recv_count);
 });
-
