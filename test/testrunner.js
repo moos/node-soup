@@ -183,8 +183,15 @@ worker.workerDone = function ( timedout ){
 		process.reallyExit(-1);
 		return;
 	}	
-	postMessage({type:'done', count: require.main.unitTest.counters.pop() || require.main.unitTest.counter || null });
+	postMessage({type:'done', count: getCounter() || null });
 	// close the worker
 	worker.close();
 }
 
+worker.getCounter = function(){
+	return require.main.unitTest.counters.pop() || require.main.unitTest.counter;
+}
+
+worker.resetCounter = function(){
+	require.main.unitTest.counter = 0;
+}

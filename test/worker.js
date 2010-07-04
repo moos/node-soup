@@ -57,6 +57,11 @@ self.onmessage = function(ev){
 
 worker.handleUncaughtException = function(msg){
 
+	if (/^AssertionError:/.test(msg) ){
+		worker.handleAssertError(msg, true);
+		return;
+	}
+	
 	// exception may have occured before our exit handler, so add it here 
 	if ( ! worker.listenerAdded) { 
 		process.addListener('exit', worker.exitListener);
@@ -80,7 +85,12 @@ worker.handleUncaughtException = function(msg){
 	
 }
 
-worker.handleAssertError = function(msg) {
+worker.handleAssertError = function(msg, async) {
+	if (async) {
+		var c = worker.getCounter();
+		c && postMessage({type:'data' , message:  c + ' previous (silent) assertions passed' });
+		worker.resetCounter();
+	}
 	postMessage({type:'error' , message: ''+msg });
 	workerDone();
 }

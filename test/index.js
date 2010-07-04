@@ -106,7 +106,7 @@ function initWorker(file) {
 		var msg = ev.message.replace(/^Uncaught ([_\$\w]+: )?/i,''); 
 		
 		// handle assertion errors here
-		if (/^AssertionError:/.test(msg) ){
+		if (00000 && /^AssertionError:/.test(msg) ){
 			QUnit.ok(false, msg);
 			QUnit.start();		// start if it wasn't started by worker
 			worker.terminate();	// force terminate worker

@@ -8,6 +8,7 @@ server = http.createServer(function (req, res) {
 
   req.connection.addListener('timeout', function(){
     sys.debug("TIMEOUT");
+    assert.ok(true,"TIMEOUT");
     server.close();
   });
 });
@@ -22,5 +23,6 @@ server.listen(PORT, function () {
   http.cat('http://localhost:'+PORT+'/', 'utf8', function (err, content) {
     clearTimeout(errorTimer);
     console.log('HTTP REQUEST COMPLETE (this is good)');
+    assert.ok(true,'HTTP REQUEST COMPLETE (this is good)');
   });
 });

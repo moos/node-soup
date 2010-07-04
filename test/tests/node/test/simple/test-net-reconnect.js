@@ -36,17 +36,6 @@ server.listen(PORT, function () {
     client_recv_count += 1;
     console.log("client_recv_count " + client_recv_count);
     assert.equal("hello\r\n", chunk);
-    
-    
-    
-    
-    
-    client.write('boo');
-    // if client doesn't write, server socket never reads so doesn't have a chance to close!!
-    
-    
-    
-    
     client.end();
   });
 
