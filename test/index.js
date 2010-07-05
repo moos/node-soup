@@ -71,7 +71,7 @@ function initWorker(file) {
 		switch(data.type){
 		case 'done':	// worker is done - trigger asyn test
 			if (data.count !== null)
-				QUnit.ok(true, 'success ('+ data.count + ' assertions)');
+				QUnit.ok(true, 'success ('+ data.count + ' silent assertions)');
 			QUnit.start();
 			return;
 		case 'data':	// data is a test data point
