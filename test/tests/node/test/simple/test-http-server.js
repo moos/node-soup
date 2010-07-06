@@ -44,6 +44,10 @@ http.createServer(function (req, res) {
 
   setTimeout(function () {
     res.writeHead(200, {"Content-Type": "text/plain"});
+    
+    console.log(222222,url.parse(req.url).pathname);
+    
+    
     res.write(url.parse(req.url).pathname);
     res.end();
   }, 1);
@@ -63,6 +67,8 @@ c.addListener("data", function (chunk) {
   server_response += chunk;
 
   if (requests_sent == 1) {
+//	  debugger;
+	  
     c.write("POST /quit HTTP/1.1\r\n\r\n");
     requests_sent += 1;
   }
