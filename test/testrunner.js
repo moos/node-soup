@@ -12,7 +12,7 @@
 
 
 // period after which test is assumed hung (increase if needed for longer tests)
-var TIMEOUT = 15000;	// msec
+var TIMEOUT = 15;	// sec
 
 // just need the parser here
 importScripts('qunit/qunit/qunit.js');
@@ -140,11 +140,15 @@ worker.runTest = function (file) {
 		console.log('!! silence mode !!', file)
 		filters [file.replace(/^\.\//,'')+'.js'] = [ 'silence' ];
 	}
+	
+	// adjust timeout for knonwn longer tests
+	if (/(test-net-binary)/.test(file))
+		TIMEOUT = 25;
 
 	// async testing requires an end marker.  this is usually done with some 'finish' or 'done' callback
 	// from the test suite.  since we don't have access to the actual test suite, we'll set some artificially
 	// sufficient timeout
-	timer = setTimeout(workerDone, TIMEOUT, true);	// longer tests may need more time!!!!!!!!!! <<<<<<<	
+	timer = setTimeout(workerDone, 1000*TIMEOUT, true);	// longer tests may need more time!!!!!!!!!! <<<<<<<	
 
 	try{		
 		// actual test file
@@ -178,7 +182,7 @@ worker.exitListener = function(code) {
 worker.workerDone = function ( timedout ){
 	clearTimeout(timer);
 	if ( timedout ){
-		postMessage({type:'error', message: 'test timedout after '+TIMEOUT+' (may want to increase TIMEOUT in '+__filename+')'  });
+		postMessage({type:'error', message: 'test timedout after '+TIMEOUT+' sec (may want to increase TIMEOUT in '+__filename+')'  });
 		// force exit! (will emit 'exit')
 		process.reallyExit(-1);
 		return;

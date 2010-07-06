@@ -30,7 +30,7 @@ QUnit = null;
 process = {
 	argv: ['node','testrunner.js'],	// node loads testrunner.js
 	env : {
-		NODE_DEBUG : 0,
+		NODE_DEBUG : 14,
 		NODE_PATH :  '../lib/node/lib'
 	}
 };	
