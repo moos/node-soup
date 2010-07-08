@@ -13,10 +13,6 @@ http.createServer(function (req, res) {
   res.id = request_number;
   req.id = request_number++;
 
-  
-  console.log('........',  res.id, req.method)
-  
-  
   if (req.id == 0) {
     assert.equal("GET", req.method);
     assert.equal("/hello", url.parse(req.url).pathname);
@@ -44,10 +40,6 @@ http.createServer(function (req, res) {
 
   setTimeout(function () {
     res.writeHead(200, {"Content-Type": "text/plain"});
-    
-    console.log(222222,url.parse(req.url).pathname);
-    
-    
     res.write(url.parse(req.url).pathname);
     res.end();
   }, 1);
@@ -67,8 +59,6 @@ c.addListener("data", function (chunk) {
   server_response += chunk;
 
   if (requests_sent == 1) {
-//	  debugger;
-	  
     c.write("POST /quit HTTP/1.1\r\n\r\n");
     requests_sent += 1;
   }
@@ -103,6 +93,3 @@ process.addListener("exit", function () {
 
   assert.equal(true, client_got_eof);
 });
-
-
-setTimeout(function(){ process.exit(-1) },3000)

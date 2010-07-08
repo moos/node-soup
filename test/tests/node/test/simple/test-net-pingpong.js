@@ -5,7 +5,7 @@ net = require("net");
 var tests_run = 0;
 
 function pingPongTest (port, host) {
-  var N = 2;
+  var N = 1000;
   var count = 0;
   var sent_final_ping = false;
 

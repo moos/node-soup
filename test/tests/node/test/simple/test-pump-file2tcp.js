@@ -25,7 +25,7 @@ server.listen(PORT, function () {
   });
 
   conn.addListener("end", function () {
-    conn.end(' ');	// close server reader
+    conn.end();
   });
   conn.addListener("close", function () {
     error('client connection close');

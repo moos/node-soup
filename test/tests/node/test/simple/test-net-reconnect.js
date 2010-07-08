@@ -1,13 +1,12 @@
 require("../common");
 net = require('net');
-var N = 5;
+var N = 50;
 
 var c = 0;
 var client_recv_count = 0;
 var disconnect_count = 0;
 
 var server = net.createServer(function (socket) {
-	
   socket.addListener("connect", function () {
     socket.write("hello\r\n");
   });
@@ -53,3 +52,4 @@ process.addListener("exit", function () {
   assert.equal(N+1, disconnect_count);
   assert.equal(N+1, client_recv_count);
 });
+

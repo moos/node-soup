@@ -56,7 +56,7 @@ server.listen(PORT, function () {
     server.close();
     assert.strictEqual(4, exception_count);
     process.exit(0);
-  }, 2300);
+  }, 300);
 });
 
 function exception_handler(err) {
