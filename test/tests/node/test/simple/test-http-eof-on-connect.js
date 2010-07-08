@@ -13,4 +13,5 @@ net.createConnection(PORT).addListener("connect", function () {
   this.close();
 }).addListener("close", function () {
 	server.close();
+	assert.ok(true,'got close');
 });
