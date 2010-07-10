@@ -143,7 +143,7 @@ worker.runTest = function (file) {
 	
 	// adjust timeout for knonwn longer tests
 	if (/(test-net-binary)/.test(file))
-		TIMEOUT = 25;
+		TIMEOUT = 35;
 
 	// async testing requires an end marker.  this is usually done with some 'finish' or 'done' callback
 	// from the test suite.  since we don't have access to the actual test suite, we'll set some artificially
