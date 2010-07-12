@@ -1,8 +1,13 @@
 
+var	eout = document.getElementById('eout'),
+	ein = document.getElementById('ein'),
+	history = [], cursor = 0, lastLine = '', storage = window.sessionStorage;
+
 
 console.log('console started', arguments);
 console.log(document, document.getElementById('eout'));
 
+loadHistory();
 
 var sys = require("sys"),
   assert = require('assert'),
@@ -13,9 +18,6 @@ var sys = require("sys"),
   prompt = "node> ",
 //  prompt = "<span class='prompt'>node> </span>",
   repls, server, client, timer;
-
-var	eout = document.getElementById('eout'),
-	ein = document.getElementById('ein');
 
 print("Type \'.help\' for options\n");
 ein.focus();
@@ -37,13 +39,7 @@ server = net.createServer(function (socket) {
 //    repls.context.message = message;
 
     console.log(repls);
-
     window.repls = repls;
-    
-    repls.rli.history = [];
-    repls.rli.historyIndex = -1;
-    repls.rli.line = '';
-
 });
 
 server.addListener('listening', function () {
@@ -84,27 +80,31 @@ server.addListener('listening', function () {
 
 server.listen(socket_path);
 
-var history = [], cursor = 0;
 
 document.getElementById('form').addEventListener('submit',function(ev){
 	
-	client.write( ein.value );
-	
 	if (ein.value !== '') {
 		history.push(ein.value);
+		if (history.length > 30) history.shift();
 		cursor = history.length;
+		saveHistory(cursor-1, ein.value);
 	}
-	
+
+	client.write( ein.value );
+
 	print(ein.value + '\n');
 	ein.value = '';
-	
 	ev.preventDefault();
 	ev.stopPropagation();
 	return false;
 }, false);
 
-document.getElementById('ein').addEventListener('keypress',function(ev){
+eout.addEventListener('click',function(ev){
+	ein.focus();
+	return true;
+},false);
 
+ein.addEventListener('keydown',function(ev){
 	var dir = 0;
 	if (ev.keyCode == 38)	// up
 		dir = -1;
@@ -112,21 +112,20 @@ document.getElementById('ein').addEventListener('keypress',function(ev){
 		dir = +1;
 	else 
 		return;
-	
+	if (cursor == history.length)
+		lastLine = ein.value;
 	var next = cursor+dir;
 	if (next >= 0 && next < history.length) {
 		ein.value = history[next];
 		cursor = next;
-		ev.preventDefault();
-		ev.stopPropagation();
-		return false;
 	}
-	
 	if (next == history.length) {
-		ein.value = '';
+		ein.value = lastLine;
 		++cursor; 
 	}
-	
+	ev.preventDefault();
+	ev.stopPropagation();
+	return false;
 }, false);
 
 window.clear = function(){
@@ -135,4 +134,17 @@ window.clear = function(){
 	ein.focus();
 	return false;
 }
+
+function saveHistory(index,value){
+	if (storage)
+		storage.setItem(index, value);
+}
+function loadHistory(){
+	if (storage) {
+		for (var i=0, l=storage.length; i<l; i++)
+			history[i] = storage.getItem(i);
+		cursor = history.length;
+	}
+}
+
 //process.exitAfter(3000);
