@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>node-soup console</title>
+    <meta charset="UTF-8" />
+
+    <script>
+		process = {
+			argv: ['node','index.js'],
+			env : {
+				NODE_DEBUG : 0,
+				NODE_PATH  : '../../lib/node/lib'
+			}
+		};				
+    </script>
+
+<style type="text/css">
+.prompt {color:purple}
+</style>
+
+</head>
+<body>
+<h3> node-soup repl</h3>
+<a href="#" onclick="return window.clear();">clear</a>
+<form id="form" style="font-family:monospace">
+<!--  <textarea id="eout" rows="22" cols="90" readonly></textarea> -->
+<div id="eout" style="border:1px solid #bbb; background:#eaeaef; width:620px; height:380px; padding:3px; overflow:auto"></div>
+<br>
+node&gt;&nbsp;<input id="ein" type="input" style="width:520px">
+</form>
+
+	<script type="text/javascript" src="../../lib/soup/soup-base-2.js"></script>
+
+</body>
+</html>

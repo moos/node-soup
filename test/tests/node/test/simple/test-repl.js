@@ -153,4 +153,4 @@ function unix_test() {
 unix_test();
 timer = setTimeout(function () {
   assert.fail("Timeout");
-}, 1000);
+}, 3000);
