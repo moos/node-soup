@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>node-soup console</title>
+	<title>node-soup repl</title>
     <meta charset="UTF-8" />
 
     <script>
@@ -15,18 +15,24 @@
     </script>
 
 <style type="text/css">
-.prompt {color:purple}
-h3 {margin:0}
+	h3 { margin: 0 }
+	.prompt { color: purple }
+	.error { color: red }
+	#cmd a,#cmd { color:#aaa; text-decoration:none; font: .9em monospace }
+	form { font-family: monospace }
+	#eout { border:1px solid #bbb; background:#eaeaef; width:620px; height:340px; padding:3px; overflow:auto; }
+	#ein { width:574px; }
 </style>
 
 </head>
 <body>
 <h3> node-soup repl</h3>
-<a href="#" onclick="return window.clear();">clear</a>
-<form id="form" style="font-family:monospace">
-<!--  <textarea id="eout" rows="22" cols="90" readonly></textarea> -->
-<div id="eout" style="border:1px solid #bbb; background:#eaeaef; width:620px; height:340px; padding:3px; overflow:auto"></div>
-node&gt;&nbsp;<input id="ein" type="input" style="width:540px" autocomplete="off" >
+<div id="cmd">clear: <a href="#" onclick="return window.clearDisplay();">display</a> / 
+<a href="#" onclick="return window.clearHistory();">history</a>
+</div>
+<form id="form">
+<div id="eout"></div>
+node&gt;&nbsp;<input id="ein" type="input" autocomplete="off" >
 </form>
 
 	<script type="text/javascript" src="../../lib/soup/soup-base-2.js"></script>

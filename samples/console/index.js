@@ -4,28 +4,29 @@ var	eout = document.getElementById('eout'),
 	history = [], cursor = 0, lastLine = '', storage = window.sessionStorage;
 
 
-console.log('console started', arguments);
-console.log(document, document.getElementById('eout'));
-
 loadHistory();
 
 var sys = require("sys"),
   assert = require('assert'),
   net = require("net"),
   repl = require("repl"),
-  message = "Read, Eval, Print Loop",
   socket_path = "/tmp/node-repl-sock",
-  prompt = "node> ",
-//  prompt = "<span class='prompt'>node> </span>",
+  helpHint = "Type \'.help\' for options\n",
+  prompt = "<span class='prompt'>node> </span>",
   repls, server, client, timer;
 
-print("Type \'.help\' for options\n");
-ein.focus();
 
-function print(msg){
+var print = exports.print = function (msg){
 	eout.innerHTML += msg.replace(/\n/g,'<br/>');
 	eout.scrollTop = eout.scrollHeight;
+};
+
+exports.writeError = function (msg){
+	print('<div class="error">'+msg+'</div>');
 }
+
+print(helpHint);
+ein.focus();
 
 server = net.createServer(function (socket) {
     assert.strictEqual(server, socket.server);
@@ -34,12 +35,13 @@ server = net.createServer(function (socket) {
 	socket.addListener("end", function () {
 		socket.end();
 	});
-
+	
+	socket.addListener("close", function () {
+		server.close();
+	});
+	
     repls = repl.start(prompt, socket);
-//    repls.context.message = message;
-
-    console.log(repls);
-    window.repls = repls;
+//    window.repls = repls;
 });
 
 server.addListener('listening', function () {
@@ -51,51 +53,52 @@ server.addListener('listening', function () {
 	  assert.equal(true, client.readable);
 	  assert.equal(true, client.writable);
 	});
-	
 	client.addListener('data', function (data) {
 		  read_buffer += data.asciiSlice(0, data.length);
-		  
-//		  console.log("Unix data: " + JSON.stringify(read_buffer));
-		  
 		  print(read_buffer);
-			
 		  if (read_buffer.indexOf(prompt) !== -1) {
 		    read_buffer = "";
 		  }
 		  else {
-		    console.log("didn't see prompt yet, bufering.");
+		    //console.log("didn't see prompt yet, bufering.");
 		  }
 	});
-	
 	client.addListener("error", function (e) {
 		throw e;
 	});
-	
 	client.addListener("close", function () {
-	      server.close();
+		server.close();
 	});
 
 });	// listening 
 
+process.addListener('exit',function(){
+	print('exited!');
+});
 
 server.listen(socket_path);
 
 
 document.getElementById('form').addEventListener('submit',function(ev){
+	ev.preventDefault();
+	ev.stopPropagation();
 	
+	if (process.mainModule.exited)
+		return false;
+		
 	if (ein.value !== '') {
 		history.push(ein.value);
 		if (history.length > 30) history.shift();
 		cursor = history.length;
 		saveHistory(cursor-1, ein.value);
+	} else {
+		ein.value += '\n';
 	}
 
 	client.write( ein.value );
 
 	print(ein.value + '\n');
 	ein.value = '';
-	ev.preventDefault();
-	ev.stopPropagation();
 	return false;
 }, false);
 
@@ -128,9 +131,16 @@ ein.addEventListener('keydown',function(ev){
 	return false;
 }, false);
 
-window.clear = function(){
+window.clearDisplay = function(){
 	eout.innerHTML='';
-	print("Type \'.help\' for options\n" + prompt);
+	print(helpHint + prompt);
+	ein.focus();
+	return false;
+}
+window.clearHistory = function() {
+	if (storage) storage.clear();
+	history = []; 
+	cursor = 0;
 	ein.focus();
 	return false;
 }
@@ -147,4 +157,3 @@ function loadHistory(){
 	}
 }
 
-//process.exitAfter(3000);

@@ -6,13 +6,13 @@
 
 	
     <script>
-    	process = {};
-    	process.argv = [];
-    	process.argv[1] = 'index.js';
-		process.env = {};
-		process.env.NODE_DEBUG = 6;		// this must be set before loading node
-		//var w = new Worker('worker.js', {alert: process});
-	</script>
+	process = {
+			argv: ['node','index.js'],
+			env : {
+				NODE_DEBUG : 15
+			}
+		};	
+    	</script>
 
 
 </head>
