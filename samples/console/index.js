@@ -18,7 +18,8 @@ var sys = require("sys"),
 
 var print = exports.print = function (msg){
 	eout.innerHTML += msg.replace(/\n/g,'<br/>');
-	eout.scrollTop = eout.scrollHeight;
+//	document.body.scrollTop = document.body.scrollHeight;
+	window.scrollTo(0, eout.scrollHeight + 60);
 };
 
 exports.writeError = function (msg){
@@ -113,8 +114,16 @@ ein.addEventListener('keydown',function(ev){
 		dir = -1;
 	else if (ev.keyCode == 40) // down
 		dir = +1;
-	else 
+	else if (ev.keyCode == 27) {	// escape
+		ein.value = '';
+		return false;
+	}
+	else
 		return;
+
+	ev.preventDefault();
+	ev.stopPropagation();
+
 	if (cursor == history.length)
 		lastLine = ein.value;
 	var next = cursor+dir;
@@ -126,8 +135,6 @@ ein.addEventListener('keydown',function(ev){
 		ein.value = lastLine;
 		++cursor; 
 	}
-	ev.preventDefault();
-	ev.stopPropagation();
 	return false;
 }, false);
 

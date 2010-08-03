@@ -5,7 +5,10 @@
 //require('./deps/node/test/simple/test-repl');
 
 //require('./test/tests/node/test/simple/test-byte-length');
-//require('./test/tests/node/test/simple/test-pump-file2tcp');
+
+
+//require('./test/tests/node/test/simple/test-http-cat');
+//return;
 
 
 
@@ -14,7 +17,9 @@ http = require("http");
 var PORT = 80;
 
 
-  http.cat("http://localhost:"+PORT+"/", "utf8", function (err, content) {
+//http.cat("http://localhost:"+PORT+"/geek/node-soup/index.js", "utf8", function (err, content) {
+  http.cat("/geek/node-soup/index.js", "utf8", function (err, content) {
+//	http.cat("http://www.yahoo.com/", "utf8", function (err, content) {
 	  
 	  debugger;
 	  
